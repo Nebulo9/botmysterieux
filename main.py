@@ -1,4 +1,5 @@
-import discord, os,json
+import discord, os,json, sys
+from discord.ext import commands
 from dotenv import load_dotenv
 from modules.setup.logger import LOGGER
 from modules.setup.bot import bot
@@ -12,6 +13,15 @@ async def help(ctx:discord.ApplicationContext):
     for command in bot.commands:
         embed.add_field(name=command.name,value=command.description,inline=False)
     await ctx.send_response(embed=embed,ephemeral=True)
+
+@bot.slash_command(name='reload',description='Reloads the bot.')
+@commands.is_owner()
+async def reload(ctx:discord.ApplicationContext):
+    """Reloads the bot."""
+    command_name = 'reload'
+    LOGGER.info(f'Executing command {command_name}.')
+    await ctx.send_response('Reloading...',ephemeral=True)
+    os.execl(sys.executable, sys.executable, *sys.argv)
 
 @bot.listen()
 async def on_ready():
