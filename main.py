@@ -3,7 +3,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from modules.setup.logger import LOGGER
 from modules.setup.bot import bot
-from modules.setup.data import DATA_DIR, save_guild_data, get_guild_data
+from modules.setup.data import DATA_DIR, create_guild_data
 
 @bot.slash_command(name='help')
 async def help(ctx:discord.ApplicationContext):
@@ -24,18 +24,29 @@ async def reload(ctx:discord.ApplicationContext):
     os.execl(sys.executable, sys.executable, *sys.argv)
 
 @bot.listen()
+async def on_guild_join(guild:discord.Guild):
+    """Creates a new guild data file when the bot joins a guild."""
+    guild_id = guild.id
+    guuld_name = guild.name
+    LOGGER.debug(f'Joined guild {guuld_name} - {guild_id}.')
+    create_guild_data(guild_id)
+
+@bot.listen()
+async def on_guild_remove(guild:discord.Guild):
+    """Deletes the guild data file when the bot leaves a guild."""
+    guild_id = guild.id
+    guuld_name = guild.name
+    LOGGER.debug(f'Left guild {guuld_name} - {guild_id}.')
+    path = os.path.join(DATA_DIR, f'{guild_id}.json')
+    os.remove(path)
+    LOGGER.debug(f'Deleted data file for guild {guild_id}.')
+    
+@bot.listen()
 async def on_ready():
     activity = discord.Activity(name='un jeu mystérieux...',type=discord.ActivityType.playing)
     await bot.change_presence(status=discord.Status.dnd,activity=activity)
     LOGGER.info('BotMysterieux is ready.')
     LOGGER.debug(f'Registered {len(bot.commands)} commands.')
-    for guild in bot.guilds:
-        guild_id = guild.id
-        path = os.path.join(DATA_DIR, f'{guild_id}.json')
-        if not os.path.exists(path):
-            with open(path,'w') as f:
-                json.dump({'features':{'joke':{'enabled': False},'role':{'enabled': False}, 'reply': {'enabled': False}, 'ratio': {'enabled': False}}}, f, indent=2)
-                LOGGER.debug(f'Created data file for guild {guild.name} - {guild_id}.')
     
 if __name__ == '__main__':
     load_dotenv()
